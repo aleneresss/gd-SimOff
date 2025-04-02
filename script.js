@@ -28,7 +28,6 @@ function capturarParcelas() {
         if (!regra) break;
         
         const valorParcela = saldoRestante * regra.taxa + regra.adicional;
-        if (valorParcela < 10) break;
         
         parcelasA.push(valorParcela);
         saldoRestante -= valorParcela;
