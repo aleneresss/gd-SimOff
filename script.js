@@ -220,7 +220,7 @@ function recalcularTotais(parcelas, datasVencimento, desagios, valoresDescontado
         <div class="total">
             <p>Total antecipado: R$ ${valorAtualParcelas.toFixed(2)}</p>
         </div>
-        <div class="resultado">
+        <div class="liberado">
             <p><big>Valor Liberado: <strong>R$ ${valorLiquidoFinal.toFixed(2)}</strong></big></p>
         </div>
     `;
