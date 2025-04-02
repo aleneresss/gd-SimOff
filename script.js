@@ -1,12 +1,7 @@
 // Função principal para capturar e processar as parcelas
 function capturarParcelas() {
     // Pega o valor do textarea e converte para número
-    const inputValores = parseFloat(
-      document.getElementById("valorInput").value
-    .replace(/[^\d,.]/g, '') // Remove tudo que não é dígito, vírgula ou ponto
-    .replace(/\./g, '')      // Remove pontos (separadores de milhar)
-    .replace(',', '.')       // Substitui vírgula decimal por ponto
-    );
+    const inputValores = parseFloat(document.getElementById("valorInput").value);
     // Verifica se o valor é válido
     if (isNaN(inputValores)) {
         alert("Por favor, insira um valor válido.");
