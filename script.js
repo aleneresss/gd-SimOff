@@ -214,7 +214,7 @@ function recalcularTotais(parcelas, datasVencimento, desagios, valoresDescontado
         <h2>Resultados:</h2>
         <br>
         <div class="resultado">
-            <p>Valor Valor meta: R$ ${valorLiberado.toFixed(2)}</p>
+            <p>Valor meta: R$ ${valorLiberado.toFixed(2)}</p>
         </div>
         <div class="resultado">
             <p>IOF total: R$ ${iofTotal.toFixed(2)}</p>
