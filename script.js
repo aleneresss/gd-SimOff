@@ -89,7 +89,7 @@ function calcularDatasVencimento(mesNascimento, totalParcelas) {
     // Encontra o próximo mês de aniversário
     let anoAniversario = anoAtual;
 
-    if (mesNascimento < mesAtual) {
+    if (mesNascimento < mesAtual+1) {
         // Se o mês de aniversário já passou este ano, o próximo será no próximo ano
         anoAniversario++;
     }
