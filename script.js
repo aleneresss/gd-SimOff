@@ -15,7 +15,7 @@ function capturarParcelas() {
         { min: 10000.01, max: 15000, taxa: 0.15, adicional: 1150 },
         { min: 5000.01, max: 10000, taxa: 0.2, adicional: 650 },
         { min: 1000.01, max: 5000, taxa: 0.3, adicional: 150 },
-        { min: 500.01, max: 1000, taxa: 0.3, adicional: 150 },
+        { min: 500.01, max: 1000, taxa: 0.4, adicional: 50 },
         { min: -Infinity, max: 500, taxa: 0.5, adicional: 0 },
     ];
 
