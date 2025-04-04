@@ -41,8 +41,18 @@ function capturarParcelas() {
         return;
     }
 
-    // Pega a taxa de juros do input
-    const taxaJurosInput = 1.79;
+    const tabela = document.getElementById("tabela").value;
+    
+    switch (tabela) {
+        case "PARANÁ":
+            taxaJurosInput = 1.79;
+            break;
+    
+        default:
+            taxaJurosInput = 1.8;
+
+    }   
+
     const taxaJurosMensal = parseFloat(taxaJurosInput) / 100; // Converte para decimal
     
     // Calcula a taxa anual (a.a.)
@@ -201,11 +211,28 @@ function recalcularTotais(parcelas, datasVencimento, desagios, valoresDescontado
     // Soma o IOF de todas as parcelas selecionadas
     const iofTotal = iofPorParcela.reduce((total, iof) => total + iof, 0);
 
-    // Calcula o valor líquido final (total dos valores descontados - IOF total)
     const valorLiquidoFinal = totalValoresDescontados - iofTotal;
+
+    const tabela = document.getElementById("tabela").value
+
+    switch (tabela) {
+        case "SENNA":
+            tac = valorLiquidoFinal*0.772 //Calcula tac SENNA
+	    valorMeta = tac*1.10
+            break;
+
+        case "LIGHT":
+            tac = valorLiquidoFinal
+	    valorMeta = tac*0.39
+            break;
+
+        case "PARANÁ":
+            tac = valorLiquidoFinal
+	    valorMeta = tac*0.6956
+            break;     
+    }
     const valorAtualParcelas = parcelasSelecionadas.reduce((total, parcela) => total + parcela, 0);    
     const valorTotalParcelas = parcelas.reduce((total, parcela) => total + parcela, 0);
-    const valorLiberado = valorLiquidoFinal*0.6955
 
     // Exibe os resultados na coluna do meio
     const colMiddle = document.querySelector(".col-middle");
@@ -213,7 +240,7 @@ function recalcularTotais(parcelas, datasVencimento, desagios, valoresDescontado
         <h2>Resultados:</h2>
         <br>
         <div class="resultado">
-            <p>Valor meta: R$ ${valorLiberado.toFixed(2)}</p>
+            <p>Valor meta: R$ ${valorMeta.toFixed(2)}</p>
         </div>
         <div class="resultado">
             <p>IOF total: R$ ${iofTotal.toFixed(2)}</p>
@@ -222,7 +249,7 @@ function recalcularTotais(parcelas, datasVencimento, desagios, valoresDescontado
             <p>Total antecipado: R$ ${valorAtualParcelas.toFixed(2)}</p>
         </div>
         <div class="liberado">
-            <p><big>Valor Liberado: <strong>R$ ${valorLiquidoFinal.toFixed(2)}</strong></big></p>
+            <p><big>Valor Liberado: <strong>R$ ${tac.toFixed(2)}</strong></big></p>
         </div>
     `;
 }
