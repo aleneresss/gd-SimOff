@@ -25,9 +25,8 @@ function capturarParcelas() {
     for (let i = 0; i < 10; i++) {
         const regra = aliquota.find(r => saldoRestante > r.min && saldoRestante <= r.max);
         if (!regra) break;
-        
         const valorParcela = saldoRestante * regra.taxa + regra.adicional;
-        
+        if (valorParcela < 0.01) break;
         parcelasA.push(valorParcela);
         saldoRestante -= valorParcela;
     }
