@@ -286,7 +286,6 @@ input:checked + .slider:before {
     border: 1px solid #00244d;  
     border-radius: 8px;
     margin-bottom: 15px;
-    font-weight: bold;
     padding: 15px;
 }
 
@@ -314,6 +313,16 @@ input:checked + .slider:before {
 big {
     font-size: 18px;
     color: #ffffff;
+}
+
+.creds p {
+    position: relative;
+    color: #7d7d7d;
+    right: -1%;
+    bottom: -150px;
+    font-size: 40px;
+    margin: 0;
+    font-family: Century Gothic;
 }
 
 strong {
