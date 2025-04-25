@@ -1,15 +1,18 @@
-// Função principal para capturar e processar as parcelas
-function capturarParcelas() {
-    // Pega o valor do textarea e converte para número
-    const inputValores = parseFloat(document.getElementById("valorInput").value);
-    // Verifica se o valor é válido
-    if (isNaN(inputValores)) {
-        alert("Por favor, insira um valor válido.");
-        return;
-    }
+const tabelasConfig = {
+    "PARANÁ TAC": { taxa: 1.79, calcTac: (v) => aplicarAlíquotaPtac(v), calcMeta: (t) => t * 0.6956 }, 
+    "PARANÁ": { taxa: 1.79, calcTac: (v) => v, calcMeta: (t) => t * 0.6956 },
+    "SENNA": { taxa: 1.8, calcTac: (v) => v * 0.772, calcMeta: (t) => t * 1.10 },
+    "PRIME": { taxa: 1.8, calcTac: (v) => v - 70, calcMeta: (t) => t * 0.68 },
+    "MONACO": { taxa: 1.8, calcTac: (v) => v * 0.815, calcMeta: (t) => t * 0.90 },
+    "GOLD POWER": { taxa: 1.8, calcTac: (v) => v * 0.85, calcMeta: (t) => t * 0.80 },
+    "LIGHT": { taxa: 1.8, calcTac: (v) => v, calcMeta: (t) => t * 0.39 }
+};
 
-    // Tabela de alíquotas progressivas
-    const aliquota = [
+// Funções auxiliares
+const calcularTaxaAnual = (taxaMensal) => Math.pow(1 + taxaMensal, 12) - 1;
+const calcularTaxaDia = (taxaAnual) => Math.pow(1 + taxaAnual, 1 / 360) - 1;
+
+const aliquota = [
         { min: 20000.01, max: Infinity, taxa: 0.05, adicional: 2900 },
         { min: 15000.01, max: 20000, taxa: 0.1, adicional: 1900 },
         { min: 10000.01, max: 15000, taxa: 0.15, adicional: 1150 },
@@ -19,9 +22,26 @@ function capturarParcelas() {
         { min: -Infinity, max: 500, taxa: 0.5, adicional: 0 },
     ];
 
+
+function calcularDesagios(datasVencimento, taxaDia) {
+    const hoje = new Date();
+    return datasVencimento.map(data => {
+        const dias = Math.ceil((data - hoje) / (1000 * 60 * 60 * 24));
+        return Math.pow(1 + taxaDia, dias);
+    });
+}
+
+// Função principal
+function capturarParcelas() {
+    // Obter dados de entrada
+    const valores = document.getElementById("valoresInput").value;
+    const tabelaSelecionada = document.getElementById("tabela").value;
+    const config = tabelasConfig[tabelaSelecionada] || tabelasConfig["PARANÁ"];
+
+    const mesNascimento = document.getElementById("mesAniv").value;
+
+    let saldoRestante = valores;
     let parcelasA = [];
-    let saldoRestante = inputValores;
-    
     for (let i = 0; i < 10; i++) {
         const regra = aliquota.find(r => saldoRestante > r.min && saldoRestante <= r.max);
         if (!regra) break;
@@ -30,64 +50,120 @@ function capturarParcelas() {
         parcelasA.push(valorParcela);
         saldoRestante -= valorParcela;
     }
-    
     console.log("Parcelas calculadas:", parcelasA);
-
-    // Extrai o mês da parcela direto do textarea
-    const mesNascimento = parseInt(document.getElementById("mesAniv").value);
-    if (isNaN(mesNascimento) || mesNascimento < 1 || mesNascimento > 12) {
-        alert("Por favor, insira um mês de aniversário válido (1-12).");
-        return;
-    }
-
-    const tabela = document.getElementById("tabela").value;
     
-    switch (tabela) {
-        case "PARANÁ":
-            taxaJurosInput = 1.79;
-            break;
-    
-        default:
-            taxaJurosInput = 1.8;
-
-    }   
-
-    const taxaJurosMensal = parseFloat(taxaJurosInput) / 100; // Converte para decimal
-    
-    // Calcula a taxa anual (a.a.)
-    const taxaAnual = calcularTaxaAnual(taxaJurosMensal);
-
-    // Calcula a taxa ao dia (a.d.)
-    const taxaDia = calcularTaxaDia(taxaAnual);
-
-    // Calcula as datas de vencimento com base no mês de aniversário (uma vez por ano)
     const datasVencimento = calcularDatasVencimento(mesNascimento, parcelasA.length);
 
-    // Calcula o deságio para cada parcela
+    // Cálculos financeiros
+    const taxaDia = calcularTaxaDia(calcularTaxaAnual(config.taxa / 100));
     const desagios = calcularDesagios(datasVencimento, taxaDia);
+    const valoresDescontados = parcelasA.map((v, i) => v / (desagios[i] || 1));
 
-    // Calcula o valor descontado de cada parcela
-    const valoresDescontados = parcelasA.map((parcela, index) => parcela / desagios[index]);
-    
-    // Exibe os valores na lista com as datas de vencimento e deságios
-    exibirParcelas(parcelasA, datasVencimento, desagios, valoresDescontados, taxaAnual, taxaDia);
-    
-    return parcelasA;
+    // Exibir resultados
+    exibirParcelas(
+        parcelasA.slice(0, 10),
+        desagios.slice(0, 10),
+        valoresDescontados.slice(0, 10),
+        calcularTaxaAnual(config.taxa / 100),
+        taxaDia,
+        datasVencimento.slice(0, 10),
+        config
+    );
 }
 
-// Função para calcular a taxa anual (a.a.)
-function calcularTaxaAnual(taxaMensal) {
-    // Fórmula: (1 + i)^12 - 1
-    return Math.pow(1 + taxaMensal, 12) - 1;
+function exibirParcelas(parcelasA, desagios, valoresDescontados, taxaAnual, taxaDia, datasVencimento, config) {
+    const listaParcelas = document.getElementById("listaParcelas");
+    const textoParcela = document.createElement("span");
+    listaParcelas.innerHTML = "";
+    listaParcelas.innerHTML = parcelasA.map((p, i) => `
+      <li>
+        <span>Parcela ${i+1}: ${brl(p)} - Vencimento: ${formatarData(datasVencimento[i])|| "N/A"}</span>
+        <label class="switch">
+          <input type="checkbox" checked data-index="${i}">
+          <span class="slider"></span>
+        </label>
+      </li>
+    `).join('');
+
+    // Configurar eventos dos checkboxes
+    document.querySelectorAll('.switch input').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const index = parseInt(this.dataset.index);
+            document.querySelectorAll('.switch input').forEach((cb, i) => {
+                cb.checked = this.checked ? (i <= index) : (i < index);
+            });
+            recalcularTotais(parcelasA, valoresDescontados, config, datasVencimento);
+        });
+    });
+
+    recalcularTotais(parcelasA, valoresDescontados, config, datasVencimento);
 }
 
-// Função para calcular a taxa ao dia (a.d.)
-function calcularTaxaDia(taxaAnual) {
-    // Fórmula: (1 + taxaAnual)^(1/360) - 1
-    return Math.pow(1 + taxaAnual, 1 / 360) - 1;
+function recalcularTotais(parcelasA, valoresDescontados, config, datasVencimento) {
+    const checkboxes = document.querySelectorAll('.switch input:checked');
+    const indices = Array.from(checkboxes).map(cb => parseInt(cb.dataset.index));
+
+    const parcelasSelecionadas = indices.map(i => parcelasA[i]);
+    const valoresSelecionados = indices.map(i => valoresDescontados[i]);
+    const datasSelecionadas = indices.map(i => datasVencimento[i]);
+
+    const totalDescontado = valoresSelecionados.reduce((a, b) => a + b, 0);
+
+    // Cálculo correto do IOF
+    const iofTotal = valoresSelecionados.reduce((total, valor, i) => {
+        const hoje = new Date();
+        const dataVenc = datasSelecionadas[i];
+        const dias = Math.ceil((dataVenc - hoje) / (1000 * 60 * 60 * 24));
+
+        const limitedias = Math.min(dias,365);
+        const iofTotal = valor*0.0038+valor*0.000082*limitedias;
+
+        return total + iofTotal;
+    }, 0);
+
+    const valorLiquido = totalDescontado - iofTotal;
+
+    // Aplica o ptac apenas se a tabela for PARANÁ
+    const tac = config.tabela === "PARANÁ" ? aplicarAlíquotaPtac(valorLiquido) : config.calcTac(valorLiquido);
+
+    // Calculando o valor da meta
+    const valorMeta = config.calcMeta(tac);
+    const f = tac.toLocaleString('pt-br',{style: 'currency', currency: 'BRL'});
+    console.log(f)
+    console.log(brl(valorMeta))
+    document.querySelector(".col-middle").innerHTML = `
+      <h2>Resultados:</h2>
+      <div class="resultado"><p>Valor meta: ${brl(valorMeta)}</p></div>
+      <div class="resultado"><p>IOF total: ${brl(iofTotal)}</p></div>
+      <div class="total"><p>Total antecipado: ${brl(parcelasSelecionadas.reduce((a, b) => a + b, 0))}</p></div>
+      <div class="liberado"><p><big>Valor Liberado: <strong>${brl(tac)}</strong></big></p></div>
+    `;
 }
 
-// Função para calcular as datas de vencimento
+// Função para aplicar a alíquota do ptac
+function aplicarAlíquotaPtac(valor) {
+    const ptac = [
+        { min: 2501.00, max: Infinity, tac: 0.05 },
+        { min: 500.01, max: 2500.00, tac: 0.075 },
+        { min: -Infinity, max: 500.00, tac: 0.1 },
+    ];
+
+    // Encontra o tac correspondente ao valor
+    const faixa = ptac.find(p => valor >= p.min && valor <= p.max);
+
+    if (faixa) {
+        return valor - valor * faixa.tac;  // Aplica a alíquota (tac) encontrada
+    }
+    return valor;  // Caso não encontre uma faixa válida, retorna o valor original
+}
+
+
+
+function brl(float) {
+        let brl = float.toLocaleString('pt-br',{style: 'currency', currency: 'brl'});
+        return brl
+}
+
 function calcularDatasVencimento(mesNascimento, totalParcelas) {
     const datasVencimento = [];
     const hoje = new Date();
@@ -111,149 +187,6 @@ function calcularDatasVencimento(mesNascimento, totalParcelas) {
     return datasVencimento;
 }
 
-// Função para calcular os deságios
-function calcularDesagios(datasVencimento, taxaDia) {
-    const hoje = new Date();
-    const desagios = [];
-
-    datasVencimento.forEach(dataVencimento => {
-        // Calcula a diferença em dias entre a data atual e a data de vencimento
-        const diferencaDias = Math.ceil((dataVencimento - hoje) / (1000 * 60 * 60 * 24));
-
-        // Calcula o deságio: (1 + taxaDia)^diferencaDias
-        const desagio = Math.pow(1 + taxaDia, diferencaDias);
-        desagios.push(desagio);
-    });
-
-    return desagios;
-}
-
-// Função para exibir as parcelas na lista
-function exibirParcelas(parcelas, datasVencimento, desagios, valoresDescontados, taxaAnual, taxaDia) {
-    const listaParcelas = document.getElementById("listaParcelas");
-    listaParcelas.innerHTML = ""; // Limpa a lista antes de adicionar novos itens
-
-    // Adiciona cada parcela à lista com a data de vencimento e deságio
-    parcelas.forEach((parcela, index) => {
-        const itemLista = document.createElement("li");
-
-        // Texto da parcela
-        const textoParcela = document.createElement("span");
-        textoParcela.textContent = `Parcela ${index + 1}: R$ ${parcela.toFixed(2)} - Vencimento: ${formatarData(datasVencimento[index])}`;
-
-        // Interruptor (toggle switch)
-        const switchContainer = document.createElement("label");
-        switchContainer.classList.add("switch");
-
-        const checkbox = document.createElement("input");
-        checkbox.type = "checkbox";
-        checkbox.checked = true; // Por padrão, todas as parcelas são usáveis
-        checkbox.dataset.index = index; // Adiciona um índice para identificar a parcela
-
-        // Adiciona um evento para ativar as parcelas acima
-        checkbox.addEventListener("change", () => {
-            if (checkbox.checked) {
-                // Ativa todas as parcelas acima
-                for (let i = 0; i <= index; i++) {
-                    const checkboxes = document.querySelectorAll(`input[type="checkbox"]`);
-                    checkboxes[i].checked = true;
-                }
-            } else {
-                // Desativa todas as parcelas abaixo
-                for (let i = index; i < parcelas.length; i++) {
-                    const checkboxes = document.querySelectorAll(`input[type="checkbox"]`);
-                    checkboxes[i].checked = false;
-                }
-            }
-            // Recalcula os totais com base nas parcelas selecionadas
-            recalcularTotais(parcelas, datasVencimento, desagios, valoresDescontados, taxaAnual, taxaDia);
-        });
-
-        const slider = document.createElement("span");
-        slider.classList.add("slider");
-
-        switchContainer.appendChild(checkbox);
-        switchContainer.appendChild(slider);
-
-        // Adiciona texto e interruptor ao item da lista
-        itemLista.appendChild(textoParcela);
-        itemLista.appendChild(switchContainer);
-
-        // Adiciona o item à lista
-        listaParcelas.appendChild(itemLista);
-    });
-
-    // Exibe os resultados na coluna do meio
-    recalcularTotais(parcelas, datasVencimento, desagios, valoresDescontados, taxaAnual, taxaDia);
-}
-
-// Função para recalcular os totais com base nas parcelas selecionadas
-function recalcularTotais(parcelas, datasVencimento, desagios, valoresDescontados, taxaAnual, taxaDia) {
-    const checkboxes = document.querySelectorAll(`input[type="checkbox"]`);
-
-    // Filtra as parcelas selecionadas
-    const parcelasSelecionadas = parcelas.filter((_, index) => checkboxes[index].checked);
-    const valoresDescontadosSelecionados = valoresDescontados.filter((_, index) => checkboxes[index].checked);
-    const datasVencimentoSelecionadas = datasVencimento.filter((_, index) => checkboxes[index].checked);
-
-    // Soma todos os valores descontados das parcelas selecionadas
-    const totalValoresDescontados = valoresDescontadosSelecionados.reduce((total, valor) => total + valor, 0);
-
-    // Calcula o IOF para cada parcela selecionada
-    const iofPorParcela = parcelasSelecionadas.map((parcela, index) => {
-        const dias = Math.ceil((datasVencimentoSelecionadas[index] - new Date()) / (1000 * 60 * 60 * 24));
-        const iofDiario = Math.min(0.000082 * dias, 0.03); // IOF diário limitado a 3%
-        const iofTotal = (0.0038 + iofDiario) * valoresDescontadosSelecionados[index]; // IOF fixo + IOF diário
-        return iofTotal;
-    });
-
-    // Soma o IOF de todas as parcelas selecionadas
-    const iofTotal = iofPorParcela.reduce((total, iof) => total + iof, 0);
-
-    const valorLiquidoFinal = totalValoresDescontados - iofTotal;
-
-    const tabela = document.getElementById("tabela").value
-
-    switch (tabela) {
-        case "SENNA":
-            tac = valorLiquidoFinal*0.772 //Calcula tac SENNA
-	    valorMeta = tac*1.10
-            break;
-
-        case "LIGHT":
-            tac = valorLiquidoFinal
-	    valorMeta = tac*0.39
-            break;
-
-        case "PARANÁ":
-            tac = valorLiquidoFinal
-	    valorMeta = tac*0.6956
-            break;     
-    }
-    const valorAtualParcelas = parcelasSelecionadas.reduce((total, parcela) => total + parcela, 0);    
-    const valorTotalParcelas = parcelas.reduce((total, parcela) => total + parcela, 0);
-
-    // Exibe os resultados na coluna do meio
-    const colMiddle = document.querySelector(".col-middle");
-    colMiddle.innerHTML = `
-        <h2>Resultados:</h2>
-        <br>
-        <div class="resultado">
-            <p>Valor meta: R$ ${valorMeta.toFixed(2)}</p>
-        </div>
-        <div class="resultado">
-            <p>IOF total: R$ ${iofTotal.toFixed(2)}</p>
-        </div>
-        <div class="total">
-            <p>Total antecipado: R$ ${valorAtualParcelas.toFixed(2)}</p>
-        </div>
-        <div class="liberado">
-            <p><big>Valor Liberado: <strong>R$ ${tac.toFixed(2)}</strong></big></p>
-        </div>
-    `;
-}
-
-// Função para formatar datas no formato DD/MM/AAAA
 function formatarData(data) {
     const dia = String(data.getDate()).padStart(2, '0');
     const mes = String(data.getMonth() + 1).padStart(2, '0'); // getMonth() retorna 0-11
