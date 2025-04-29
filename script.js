@@ -1,9 +1,9 @@
 const tabelasConfig = {
     "PARANÁ TAC": { taxa: 1.79, calcTac: (v) => aplicarAlíquotaPtac(v), calcMeta: (t) => t * 0.6956 }, 
     "PARANÁ": { taxa: 1.79, calcTac: (v) => v, calcMeta: (t) => t * 0.6956 },
-    "SENNA": { taxa: 1.8, calcTac: (v) => v * 0.772, calcMeta: (t) => t * 1.10 },
+    "SENNA": { taxa: 1.8, calcTac: (v, e) => v - (e/(100/22)), calcMeta: (t) => t * 1.10 },
     "PRIME": { taxa: 1.8, calcTac: (v) => v - 70, calcMeta: (t) => t * 0.68 },
-    "MONACO": { taxa: 1.8, calcTac: (v) => v * 0.815, calcMeta: (t) => t * 0.90 },
+    "MONACO": { taxa: 1.8, calcTac: (v, e) => v - (e/(100/20)), calcMeta: (t) => t * 0.90 },
     "GOLD POWER": { taxa: 1.8, calcTac: (v) => v * 0.85, calcMeta: (t) => t * 0.80 },
     "LIGHT": { taxa: 1.8, calcTac: (v) => v, calcMeta: (t) => t * 0.39 }
 };
@@ -124,7 +124,7 @@ function recalcularTotais(parcelasA, valoresDescontados, config, datasVencimento
     const valorLiquido = totalDescontado - iofTotal;
 
     // Aplica o ptac apenas se a tabela for PARANÁ
-    const tac = config.tabela === "PARANÁ" ? aplicarAlíquotaPtac(valorLiquido) : config.calcTac(valorLiquido);
+    const tac = config.tabela === "PARANÁ" ? aplicarAlíquotaPtac(valorLiquido) : config.calcTac(valorLiquido, valorLiquido);
 
     // Calculando o valor da meta
     const valorMeta = config.calcMeta(tac);
