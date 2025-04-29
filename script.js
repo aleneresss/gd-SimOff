@@ -124,7 +124,7 @@ function recalcularTotais(parcelasA, valoresDescontados, config, datasVencimento
     const valorLiquido = totalDescontado - iofTotal;
 
     // Aplica o ptac apenas se a tabela for PARANÁ
-    const tac = config.tabela === "PARANÁ" ? aplicarAlíquotaPtac(valorLiquido) : config.calcTac(valorLiquido, valorLiquido);
+    const tac = config.tabela === "PARANÁ" ? aplicarAlíquotaPtac(valorLiquido) : config.calcTac(valorLiquido, totalDescontado);
 
     // Calculando o valor da meta
     const valorMeta = config.calcMeta(tac);
