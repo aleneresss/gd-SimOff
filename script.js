@@ -1,11 +1,9 @@
 const tabelasConfig = {
-    "PARANÁ TAC": { taxa: 1.79, calcTac: (v) => aplicarAlíquotaPtac(v), calcMeta: (t) => t * 0.7825 }, 
-    "PARANÁ": { taxa: 1.79, calcTac: (v) => v, calcMeta: (t) => t * 0.7825 },
-    "PARANÁ SEG": { taxa: 1.79, calcTac: (v, e) => Math.max(v-(e / (100/6)), v - 600), calcMeta: (t) => t * 0.8 },
+    "PARANÁ": { taxa: 1.79, calcTac: (v, e) => aplicarAlíquotaPtac(v, e), calcMeta: (t) => document.getElementById('seguro').checked ? t * 0.8 : t * 0.7825 }, 
     "SENNA": { taxa: 1.8, calcTac: (v, e) => v - (e/(100/22)), calcMeta: (t) => t * 1.10 },
     "PRIME": { taxa: 1.8, calcTac: (v) => v - 70, calcMeta: (t) => t * 0.68 },
-    "MONACO": { taxa: 1.8, calcTac: (v, e) => v * 0.815, calcMeta: (t) => t * 0.9 },
-    "GOLD POWER": { taxa: 1.8, calcTac: (v) => v * 0.85, calcMeta: (t) => t * 0.8 },
+    "MONACO": { taxa: 1.8, calcTac: (v, e) => v * 0.815, calcMeta: (t) => t * 0.90 },
+    "GOLD POWER": { taxa: 1.8, calcTac: (v) => v * 0.85, calcMeta: (t) => t * 0.80 },
     "LIGHT": { taxa: 1.8, calcTac: (v) => v, calcMeta: (t) => t * 0.39 }
 };
 
@@ -13,6 +11,46 @@ const tabelasConfig = {
 const calcularTaxaAnual = (taxaMensal) => Math.pow(1 + taxaMensal, 12) - 1;
 const calcularTaxaDia = (taxaAnual) => Math.pow(1 + taxaAnual, 1 / 360) - 1;
 
+const select = document.getElementById('tabela');
+const container = document.getElementById('checkboxContainer');
+
+
+function createCheckboxRow(labelText, checkboxId) {
+    const row = document.createElement('div');
+    row.style.display = 'flex';
+    row.style.alignItems = 'center';
+    row.style.marginBottom = '-3px';
+
+    const label = document.createElement('label');
+    label.htmlFor = checkboxId;
+    label.textContent = labelText;
+    label.style.marginRight = '2px';
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.id = checkboxId;
+    checkbox.checked="true"
+    checkbox.class="slide"
+    row.style.display = 'flex';
+    row.style.alignItems = 'baseline';
+
+    row.appendChild(label);
+    row.appendChild(checkbox);
+
+    return row;
+  }
+
+  function updateCheckboxes() {
+    container.innerHTML = ''; // Limpa checkboxes anteriores
+
+    if (select.value === 'PARANÁ') {
+      container.appendChild(createCheckboxRow('SEGURO:', 'seguro'));
+      container.appendChild(createCheckboxRow('APLICAR TAC:', 'tac'));
+    }
+  }
+
+  select.addEventListener('change', updateCheckboxes);
+  window.addEventListener('DOMContentLoaded', updateCheckboxes);
 const aliquota = [
         { min: 20000.01, max: Infinity, taxa: 0.05, adicional: 2900 },
         { min: 15000.01, max: 20000, taxa: 0.1, adicional: 1900 },
@@ -141,21 +179,25 @@ function recalcularTotais(parcelasA, valoresDescontados, config, datasVencimento
     `;
 }
 
-// Função para aplicar a alíquota do ptac
-function aplicarAlíquotaPtac(valor) {
+function aplicarAlíquotaPtac(valor, emissão) {
     const ptac = [
-        { min: 2501.00, max: Infinity, tac: 0.05 },
-        { min: 500.01, max: 2500.00, tac: 0.075 },
-        { min: -Infinity, max: 500.00, tac: 0.1 },
+        { min: 2501.00, max: Infinity, tac: 21 },
+        { min: 501.00, max: 2500.99, tac: 43/3 },
+        { min: -Infinity, max: 500.99, tac: 11 },
     ];
 
-    // Encontra o tac correspondente ao valor
     const faixa = ptac.find(p => valor >= p.min && valor <= p.max);
 
-    if (faixa) {
-        return valor - valor * faixa.tac;  // Aplica a alíquota (tac) encontrada
-    }
-    return valor;  // Caso não encontre uma faixa válida, retorna o valor original
+    let tac = 0
+    let seguro = 0
+    if (document.getElementById('seguro').checked){
+            seguro = valor - Math.max(valor -(emissão / (100/6)), valor - 600)
+            console.log(emissão)
+        }
+    if (document.getElementById('tac').checked){
+            tac = valor / faixa.tac
+        }
+    return valor - seguro - tac
 }
 
 
