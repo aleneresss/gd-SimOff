@@ -234,3 +234,5 @@ function formatarData(data) {
     const ano = data.getFullYear();
     return `${dia}/${mes}/${ano}`;
 }
+
+window.addEventListener('input', capturarParcelas)
